@@ -4,9 +4,10 @@ using Shop.Mail;
 
 namespace Shop.Background;
 
-// Рассылка: раз в пять секунд забирает себе батч писем, чьё время пришло, шлёт и ставит отметку.
+// Рассылка: четыре цикла, каждый раз в пять секунд забирает себе батч писем, чьё время пришло,
+// шлёт и ставит отметку; пришёл полный батч — следующий сразу.
 // Забирает одной командой: FOR UPDATE SKIP LOCKED пропускает строки, которые сейчас
-// забирает другой инстанс, а «взято до» (NextTryAt на пять минут вперёд) прячет взятые.
+// забирает другой инстанс или соседний цикл, а «взято до» (NextTryAt на пять минут вперёд) прячет взятые.
 // Ошибка почты добавляет попытку и отодвигает следующую: 1, 4, 9, 16 минут.
 // После пятой ошибки письмо выходит из выборки и ждёт разбора (OutboxController).
 // На остановке начатое письмо уходит до конца и получает отметку, новое не начинается.
@@ -16,29 +17,36 @@ public class EmailOutboxWorker(
     ILogger<EmailOutboxWorker> log) : BackgroundService
 {
     private const int BatchSize = 20;
+    private const int Loops = 4;
 
-    protected override async Task ExecuteAsync(
-        CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(
+        CancellationToken stoppingToken) =>
+        Task.WhenAll(Enumerable.Range(0, Loops)
+            .Select(_ => LoopAsync(stoppingToken)));
+
+    private async Task LoopAsync(CancellationToken ct)
     {
         using var timer = new PeriodicTimer(
             TimeSpan.FromSeconds(5));
-        while (await timer
-                   .WaitForNextTickAsync(stoppingToken))
+        while (await timer.WaitForNextTickAsync(ct))
         {
-            // отмену при остановке catch пропускает
             try
             {
-                await SendBatchAsync(stoppingToken);
+                // батч полный — следующий сразу
+                int taken;
+                do taken = await SendBatchAsync(ct);
+                while (taken == BatchSize);
             }
             catch (Exception ex)
-                when (!stoppingToken.IsCancellationRequested)
+                when (!ct.IsCancellationRequested)
             {
                 log.LogError(ex, "Проход рассылки упал");
             }
         }
     }
 
-    private async Task SendBatchAsync(CancellationToken ct)
+    // проход возвращает, сколько писем забрал
+    private async Task<int> SendBatchAsync(CancellationToken ct)
     {
         // свой scope на проход: у фона нет запроса
         await using var scope = scopes.CreateAsyncScope();
@@ -63,7 +71,7 @@ public class EmailOutboxWorker(
                 """)
             .ToListAsync(ct);
         if (batch.Count == 0)
-            return;
+            return 0;
         // заказы батча — отдельным запросом:
         // к UPDATE … RETURNING Include не прицепить
         var ids = batch.Select(p => p.OrderId).ToList();
@@ -87,6 +95,7 @@ public class EmailOutboxWorker(
             // отметку сохраняем и при остановке
             await db.SaveChangesAsync(CancellationToken.None);
         }
+        return batch.Count;
     }
 
     // ошибка почты: попытка, пауза, строка в лог
