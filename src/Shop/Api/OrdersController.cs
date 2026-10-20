@@ -31,19 +31,24 @@ public class OrdersController : ControllerBase
         return Ok(order.Id);
     }
 
-    // загрузить, проверить, поменять, сохранить
+    // Раздел 11: оплата — одной командой с условием, как очистка.
+    // Кто первым изменил строку, тот и прав; привычная оплата —
+    // анти-пример Mistakes/LoadModifySavePay.cs
     [HttpPost("{id:guid}/pay")]
     public async Task<IActionResult> Pay(
         Guid id, CancellationToken ct)
     {
-        var order = await _db.Orders.FindAsync([id], ct);
-        if (order is null)
-            return NotFound();
-        if (order.Status != OrderStatus.New)
-            return Conflict("Заказ уже оплачен или отменён");
-        order.Status = OrderStatus.Paid;
-        await _db.SaveChangesAsync(ct);
-        return Ok();
+        // сработает, только если заказ ещё новый
+        var paid = await _db.Orders
+            .Where(o => o.Id == id
+                     && o.Status == OrderStatus.New)
+            .ExecuteUpdateAsync(s => s.SetProperty(
+                o => o.Status, OrderStatus.Paid), ct);
+        if (paid == 1)
+            return Ok();
+        return await _db.Orders.AnyAsync(o => o.Id == id, ct)
+            ? Conflict("Заказ уже оплачен или отменён")
+            : NotFound();
     }
 
     [HttpGet("{id:guid}")]

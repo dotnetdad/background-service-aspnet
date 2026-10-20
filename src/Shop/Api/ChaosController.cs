@@ -58,4 +58,25 @@ public class ChaosController(IOptions<MailSettings> mail) : ControllerBase
         DbChaos.CrashAfterNextSave();
         return Ok("Процесс упадёт сразу после следующего сохранения в базу");
     }
+
+    [HttpPost("pay/slow")]
+    public IActionResult PaySlow(int seconds = 70)
+    {
+        DbChaos.PaySlowSeconds = seconds;
+        return Ok($"Привычная оплата ждёт {seconds} с перед сохранением");
+    }
+
+    [HttpPost("cleanup/slow")]
+    public IActionResult CleanupSlow(int seconds = 70)
+    {
+        DbChaos.CleanupSlowSeconds = seconds;
+        return Ok($"Очистка загрузкой ждёт {seconds} с перед сохранением");
+    }
+
+    [HttpPost("db/ok")]
+    public IActionResult DbOk()
+    {
+        DbChaos.Reset();
+        return Ok("Сбои базы сняты");
+    }
 }

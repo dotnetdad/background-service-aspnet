@@ -44,3 +44,12 @@ POST http://localhost:8082/chaos/mail/slow?seconds=1
 
 ### Процесс упадёт сразу после следующей отправки письма
 POST {{shop}}/chaos/crash-after-send
+
+### Привычная оплата (анти-пример LoadModifySavePay) ждёт 70 секунд перед сохранением
+POST {{shop}}/chaos/pay/slow?seconds=70
+
+### Очистка загрузкой (анти-пример LoadModifySave) ждёт 70 секунд перед сохранением
+POST {{shop}}/chaos/cleanup/slow?seconds=70
+
+### Сбои базы сняты
+POST {{shop}}/chaos/db/ok
