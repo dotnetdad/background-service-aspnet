@@ -19,5 +19,9 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
             .HasIndex(p => p.NextTryAt)
             .HasFilter("\"SentAt\" IS NULL AND \"Attempts\" < "
                        + PendingEmail.MaxAttempts);
+
+        // очистка ищет новые заказы по времени создания
+        b.Entity<Order>()
+            .HasIndex(o => new { o.Status, o.CreatedAt });
     }
 }

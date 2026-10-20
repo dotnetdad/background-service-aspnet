@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Shop.Background;
 using Shop.Data;
@@ -7,7 +8,10 @@ using Shop.Mistakes;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers(o =>
-    o.Conventions.Add(new MistakeRoutes(builder.Configuration)));
+        o.Conventions.Add(new MistakeRoutes(builder.Configuration)))
+    // статус заказа в ответах — строкой: New, Paid, Cancelled
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters
+        .Add(new JsonStringEnumConverter()));
 builder.Services.Configure<MailSettings>(
     builder.Configuration.GetSection("Mail"));
 
@@ -16,6 +20,9 @@ builder.Services.AddDbContext<AppDb>(o =>
         .GetConnectionString("Db")));
 builder.Services.AddSingleton<IOrderMail, SmtpOrderMail>();
 builder.Services.AddHostedService<EmailOutboxWorker>();
+
+// без регистрации сервис молча не запустится
+builder.Services.AddHostedService<OrderCleanupWorker>();
 
 // грейс-период: Kubernetes — 30 с, в compose
 // проекта stop_grace_period тоже 30 с; хосту — 20
