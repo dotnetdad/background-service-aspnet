@@ -39,6 +39,8 @@ services:
     # грейс-период: после сигнала остановки — 30 секунд, как у Kubernetes,
     # потом SIGKILL (по умолчанию у docker compose — 10). Хосту — 20 (Program.cs)
     stop_grace_period: 30s
+    # лимит памяти, как у пода в Kubernetes: превысил — контейнер убивают (раздел 14)
+    mem_limit: 512m
     # упавший процесс поднимается заново, как под оркестратором
     restart: on-failure
 

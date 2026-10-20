@@ -34,12 +34,18 @@ public static class MistakeSwitch
                 && impl.Name == mistake.Name && !IsMistake(impl)).ToList();
             foreach (var d in real)
             {
+                // AddSingleton<ProductViews>() — тип сервиса и есть реализация:
+                // настоящий остаётся для того, что анти-пример не подменяет,
+                // а рядом встаёт анти-пример, его берут подменённые классы
+                if (d.ServiceType == d.ImplementationType)
+                {
+                    services.Add(new ServiceDescriptor(
+                        mistake, mistake, d.Lifetime));
+                    continue;
+                }
                 services.Remove(d);
-                // AddSingleton<ProductViews>() — тип сервиса и есть реализация
-                var serviceType = d.ServiceType == d.ImplementationType
-                    ? mistake : d.ServiceType;
                 services.Add(new ServiceDescriptor(
-                    serviceType, mistake, d.Lifetime));
+                    d.ServiceType, mistake, d.Lifetime));
             }
             if (real.Count == 0
                 && typeof(IHostedService).IsAssignableFrom(mistake))

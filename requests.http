@@ -77,3 +77,18 @@ POST http://localhost:8088/exports
 Content-Type: application/json
 
 < ./tools/export-october.json
+
+### Страница товара: просмотр уходит в канал
+GET {{shop}}/products/77
+
+### «Популярное» за последний час
+GET {{shop}}/products/popular
+
+### База занята: запись просмотров ждёт 30 секунд
+POST {{shop}}/chaos/db/slow-views?seconds=30
+
+### Поток просмотров: миллион разом
+POST {{shop}}/chaos/views/flood?count=1000000
+
+### Сколько просмотров в канале и сколько памяти у процесса
+GET {{shop}}/chaos/views

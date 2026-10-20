@@ -10,6 +10,8 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<ScheduledJob> ScheduledJobs => Set<ScheduledJob>();
     public DbSet<DailySale> DailySales => Set<DailySale>();
     public DbSet<Export> Exports => Set<Export>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductView> ProductViews => Set<ProductView>();
 
     // сбои базы из README (/chaos/...)
     protected override void OnConfiguring(DbContextOptionsBuilder o) =>
@@ -43,5 +45,18 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
         // а части идут по (CreatedAt, Id) — после последнего заказа прошлой
         b.Entity<Order>()
             .HasIndex(o => new { o.CreatedAt, o.Id });
+
+        // «Популярное» читает просмотры только за последний час
+        b.Entity<ProductView>()
+            .HasIndex(v => v.ViewedAt);
+
+        // товары магазина создаются вместе с базой: 1–100, 77 — кружка
+        b.Entity<Product>().HasData(Enumerable.Range(1, 100)
+            .Select(id => new Product
+            {
+                Id = id,
+                Name = id == 77 ? "Кружка" : $"Товар {id}",
+                Price = 100 + id * 10
+            }));
     }
 }

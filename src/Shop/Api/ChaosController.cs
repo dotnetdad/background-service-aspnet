@@ -1,6 +1,8 @@
+using System.Threading.Channels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Shop.Chaos;
+using Shop.Data;
 using Shop.Mail;
 
 namespace Shop.Api;
@@ -80,10 +82,49 @@ public class ChaosController(IOptions<MailSettings> mail) : ControllerBase
         return Ok($"Часть выгрузки пишется {seconds} с");
     }
 
+    [HttpPost("db/slow-views")]
+    public IActionResult DbSlowViews(int seconds = 30)
+    {
+        ViewsChaos.SaveSeconds = seconds;
+        return Ok($"Запись просмотров в базу ждёт {seconds} с");
+    }
+
+    // поток просмотров, как со страниц на распродаже: пишет в тот канал,
+    // что сейчас у магазина, — настоящий или анти-пример UnboundedViews
+    [HttpPost("views/flood")]
+    public IActionResult ViewsFlood(int count = 1_000_000)
+    {
+        var writer = ViewsWriter();
+        for (var i = 0; i < count; i++)
+            writer.TryWrite(new ProductView(1 + i % 100));
+        return Ok($"Просмотров записано в канал: {count}");
+    }
+
+    [HttpGet("views")]
+    public IActionResult Views() => Ok(new
+    {
+        InChannel = ViewsReader().Count,
+        HeapMb = GC.GetTotalMemory(false) / 1_048_576,
+        ProcessMb = Environment.WorkingSet / 1_048_576
+    });
+
+    private ChannelWriter<ProductView> ViewsWriter() =>
+        HttpContext.RequestServices
+            .GetService<Mistakes.UnboundedViews.ProductViews>()?.Writer
+        ?? HttpContext.RequestServices
+            .GetRequiredService<Background.ProductViews>().Writer;
+
+    private ChannelReader<ProductView> ViewsReader() =>
+        HttpContext.RequestServices
+            .GetService<Mistakes.UnboundedViews.ProductViews>()?.Reader
+        ?? HttpContext.RequestServices
+            .GetRequiredService<Background.ProductViews>().Reader;
+
     [HttpPost("db/ok")]
     public IActionResult DbOk()
     {
         DbChaos.Reset();
+        ViewsChaos.SaveSeconds = 0;
         return Ok("Сбои базы сняты");
     }
 }

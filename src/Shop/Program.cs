@@ -26,6 +26,10 @@ builder.Services.AddHostedService<OrderCleanupWorker>();
 builder.Services.AddHostedService<DailySalesWorker>();
 builder.Services.AddHostedService<ExportWorker>();
 
+// один канал: страница и сервис делят его
+builder.Services.AddSingleton<ProductViews>();
+builder.Services.AddHostedService<ViewsWriter>();
+
 // грейс-период: Kubernetes — 30 с, в compose
 // проекта stop_grace_period тоже 30 с; хосту — 20
 builder.Services.Configure<HostOptions>(o =>
