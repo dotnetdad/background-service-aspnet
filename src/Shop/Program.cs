@@ -23,6 +23,7 @@ builder.Services.AddHostedService<EmailOutboxWorker>();
 
 // без регистрации сервис молча не запустится
 builder.Services.AddHostedService<OrderCleanupWorker>();
+builder.Services.AddHostedService<DailySalesWorker>();
 
 // грейс-период: Kubernetes — 30 с, в compose
 // проекта stop_grace_period тоже 30 с; хосту — 20
