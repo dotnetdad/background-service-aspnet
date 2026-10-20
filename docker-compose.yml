@@ -31,7 +31,10 @@ services:
       ConnectionStrings__Db: "Host=db;Database=shop;Username=shop;Password=shop;GSS Encryption Mode=Disable"
       Mail__Host: mail
       Mail__Port: "25"
+      # файлы выгрузок — в общем томе: их видят оба инстанса
+      Exports__Dir: /exports
       # анти-примеры — в docker-compose.override.yml (README, «Анти-примеры»)
+    volumes: ["exports:/exports"]
     ports: ["8080:8080"]
     # грейс-период: после сигнала остановки — 30 секунд, как у Kubernetes,
     # потом SIGKILL (по умолчанию у docker compose — 10). Хосту — 20 (Program.cs)
@@ -44,3 +47,13 @@ services:
     <<: *shop
     profiles: [copies]
     ports: ["8082:8080"]
+
+  # прокси перед магазином: ждёт ответа минуту, потом отдаёт 504 (раздел 13)
+  proxy:
+    image: nginx:alpine
+    depends_on: [shop]
+    volumes: ["./proxy/nginx.conf:/etc/nginx/nginx.conf:ro"]
+    ports: ["8088:80"]
+
+volumes:
+  exports:

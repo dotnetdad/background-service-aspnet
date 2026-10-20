@@ -24,6 +24,7 @@ builder.Services.AddHostedService<EmailOutboxWorker>();
 // без регистрации сервис молча не запустится
 builder.Services.AddHostedService<OrderCleanupWorker>();
 builder.Services.AddHostedService<DailySalesWorker>();
+builder.Services.AddHostedService<ExportWorker>();
 
 // грейс-период: Kubernetes — 30 с, в compose
 // проекта stop_grace_period тоже 30 с; хосту — 20
@@ -32,6 +33,10 @@ builder.Services.Configure<HostOptions>(o =>
 
 // анти-примеры: Mistakes__Имя=true (README, «Анти-примеры»)
 builder.Services.AddMistakes(builder.Configuration);
+
+// файлы выгрузок — в общем хранилище (в compose — том exports)
+ExportFiles.Dir = builder.Configuration["Exports:Dir"] ?? "exports";
+Directory.CreateDirectory(ExportFiles.Dir);
 
 var app = builder.Build();
 

@@ -53,3 +53,27 @@ POST {{shop}}/chaos/cleanup/slow?seconds=70
 
 ### Сбои базы сняты
 POST {{shop}}/chaos/db/ok
+
+### Выгрузка заказов за октябрь: 202 и адрес статуса в Location
+POST {{shop}}/exports
+Content-Type: application/json
+
+< ./tools/export-october.json
+
+### Статус выгрузки (подставь номер из ответа)
+GET {{shop}}/exports/00000000-0000-0000-0000-000000000000
+
+### Отменить выгрузку
+POST {{shop}}/exports/00000000-0000-0000-0000-000000000000/cancel
+
+### Скачать готовый файл
+GET {{shop}}/exports/00000000-0000-0000-0000-000000000000/file
+
+### Часть выгрузки пишется 5 секунд
+POST {{shop}}/chaos/export/slow?seconds=5
+
+### Выгрузка через прокси, который ждёт ответа минуту (анти-пример ExportInRequest)
+POST http://localhost:8088/exports
+Content-Type: application/json
+
+< ./tools/export-october.json

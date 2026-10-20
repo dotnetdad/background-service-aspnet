@@ -73,6 +73,13 @@ public class ChaosController(IOptions<MailSettings> mail) : ControllerBase
         return Ok($"Очистка загрузкой ждёт {seconds} с перед сохранением");
     }
 
+    [HttpPost("export/slow")]
+    public IActionResult ExportSlow(int seconds = 5)
+    {
+        ExportChaos.PartSeconds = seconds;
+        return Ok($"Часть выгрузки пишется {seconds} с");
+    }
+
     [HttpPost("db/ok")]
     public IActionResult DbOk()
     {

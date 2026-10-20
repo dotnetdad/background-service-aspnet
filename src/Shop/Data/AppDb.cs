@@ -9,6 +9,7 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
     public DbSet<PendingEmail> PendingEmails => Set<PendingEmail>();
     public DbSet<ScheduledJob> ScheduledJobs => Set<ScheduledJob>();
     public DbSet<DailySale> DailySales => Set<DailySale>();
+    public DbSet<Export> Exports => Set<Export>();
 
     // сбои базы из README (/chaos/...)
     protected override void OnConfiguring(DbContextOptionsBuilder o) =>
@@ -33,5 +34,14 @@ public class AppDb(DbContextOptions<AppDb> options) : DbContext(options)
             Name = "daily-sales",
             NextRunAt = DateTime.UnixEpoch
         });
+
+        // статус выгрузки — строкой: его сравнивает SQL
+        b.Entity<Export>()
+            .Property(e => e.Status)
+            .HasConversion<string>();
+        // выгрузка и её count ищут заказы по времени создания,
+        // а части идут по (CreatedAt, Id) — после последнего заказа прошлой
+        b.Entity<Order>()
+            .HasIndex(o => new { o.CreatedAt, o.Id });
     }
 }
