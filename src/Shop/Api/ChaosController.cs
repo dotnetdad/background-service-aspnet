@@ -28,4 +28,11 @@ public class ChaosController : ControllerBase
         MailChaos.Reset();
         return Ok("Почта работает");
     }
+
+    [HttpPost("crash-after-save")]
+    public IActionResult CrashAfterSave()
+    {
+        DbChaos.CrashAfterNextSave();
+        return Ok("Процесс упадёт сразу после следующего сохранения в базу");
+    }
 }

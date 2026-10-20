@@ -20,3 +20,6 @@ POST {{shop}}/chaos/mail/slow?seconds=9
 
 ### Почта снова работает, все сбои почты сняты
 POST {{shop}}/chaos/mail/up
+
+### Процесс упадёт сразу после следующего сохранения в базу
+POST {{shop}}/chaos/crash-after-save

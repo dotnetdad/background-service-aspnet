@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Shop.Data;
-using Shop.Mail;
 
 namespace Shop.Api;
 
@@ -10,29 +9,24 @@ namespace Shop.Api;
 public class OrdersController : ControllerBase
 {
     private readonly AppDb _db;
-    private readonly IOrderMail _mail;
 
-    public OrdersController(AppDb db, IOrderMail mail)
+    public OrdersController(AppDb db)
     {
         _db = db;
-        _mail = mail;
     }
 
-    // Раздел 1: письмо уходит в Task.Run, отметку ставит контекст запроса.
-    // Письмо приходит, отметки нет, в логе пусто (README, 01-task-run).
+    // Раздел 2: заказ и строка письма в таблице исходящих —
+    // одним SaveChanges, одной транзакцией
     [HttpPost]
-    public async Task<IActionResult> Create(NewOrder dto)
+    public async Task<IActionResult> Create(
+        NewOrder dto, CancellationToken ct)
     {
         var order = new Order(dto.UserId, dto.Items);
         _db.Orders.Add(order);
-        await _db.SaveChangesAsync();
-
-        _ = Task.Run(async () =>
-        {
-            await _mail.SendAsync(dto.Email, order);
-            order.EmailSentAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync();
-        });
+        // письмо — строкой в той же транзакции
+        _db.PendingEmails.Add(
+            new PendingEmail(order, dto.Email));
+        await _db.SaveChangesAsync(ct);
 
         return Ok(order.Id);
     }
