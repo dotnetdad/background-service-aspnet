@@ -38,3 +38,6 @@ POST {{shop}}/chaos/mail/silent
 
 ### Вернуть письма после пяти ошибок в очередь
 POST {{shop}}/outbox/given-up/retry
+
+### Второй инстанс (docker compose --profile copies up): почта медленная и у него
+POST http://localhost:8082/chaos/mail/slow?seconds=1

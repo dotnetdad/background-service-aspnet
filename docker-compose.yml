@@ -20,7 +20,7 @@ services:
       - "8025:80"    # веб-интерфейс почты: http://localhost:8025
       - "2525:25"
 
-  shop:
+  shop: &shop
     build: .
     depends_on:
       db: { condition: service_healthy }
@@ -38,3 +38,9 @@ services:
     stop_grace_period: 30s
     # упавший процесс поднимается заново, как под оркестратором
     restart: on-failure
+
+  # второй инстанс магазина: docker compose --profile copies up --build
+  shop2:
+    <<: *shop
+    profiles: [copies]
+    ports: ["8082:8080"]
