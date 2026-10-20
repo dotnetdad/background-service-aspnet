@@ -120,6 +120,13 @@ public class ChaosController(IOptions<MailSettings> mail) : ControllerBase
         ?? HttpContext.RequestServices
             .GetRequiredService<Background.ProductViews>().Reader;
 
+    [HttpPost("cleanup/fail")]
+    public IActionResult CleanupFail()
+    {
+        DbChaos.CleanupFails = true;
+        return Ok("Проход очистки падает на каждом тике");
+    }
+
     [HttpPost("db/ok")]
     public IActionResult DbOk()
     {

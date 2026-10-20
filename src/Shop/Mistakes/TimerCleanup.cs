@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Shop.Background;
 using Shop.Data;
 
 namespace Shop.Mistakes.TimerCleanup;
@@ -11,6 +12,7 @@ namespace Shop.Mistakes.TimerCleanup;
 // вместе с рассылкой и приёмом заказов (README, 10-schedule).
 public class OrderCleanupWorker(
     IServiceScopeFactory scopes,
+    CleanupStatus status,
     ILogger<OrderCleanupWorker> log) : IHostedService, IDisposable
 {
     private Timer? _timer;
@@ -47,5 +49,6 @@ public class OrderCleanupWorker(
         if (cancelled > 0)
             log.LogInformation(
                 "Отменено заказов: {Count}", cancelled);
+        status.Passed(); // для хелсчека, как у настоящей очистки
     }
 }

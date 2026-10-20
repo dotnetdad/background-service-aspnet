@@ -92,3 +92,9 @@ POST {{shop}}/chaos/views/flood?count=1000000
 
 ### Сколько просмотров в канале и сколько памяти у процесса
 GET {{shop}}/chaos/views
+
+### Хелсчеки фоновой работы
+GET {{shop}}/health
+
+### Проход очистки падает на каждом тике (снять — /chaos/db/ok)
+POST {{shop}}/chaos/cleanup/fail

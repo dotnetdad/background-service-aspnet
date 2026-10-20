@@ -5,8 +5,10 @@ namespace Shop.Background;
 
 // Очистка: раз в минуту отменяет заказы, которые не оплатили за полчаса, —
 // всех разом, одной командой в базе. Цикл тот же, что у рассылки.
+// После успешного прохода пишет время в CleanupStatus — его смотрит хелсчек.
 public class OrderCleanupWorker(
     IServiceScopeFactory scopes,
+    CleanupStatus status,
     ILogger<OrderCleanupWorker> log) : BackgroundService
 {
     protected override async Task ExecuteAsync(
@@ -20,6 +22,7 @@ public class OrderCleanupWorker(
             try
             {
                 await CancelUnpaidAsync(stoppingToken);
+                status.Passed(); // для хелсчека
             }
             catch (Exception ex)
                 when (!stoppingToken.IsCancellationRequested)

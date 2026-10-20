@@ -10,7 +10,10 @@ public static class DbChaos
 {
     private static int _crashAfterSave;
 
-    public static readonly IInterceptor[] Interceptors = [new Saves()];
+    public static readonly IInterceptor[] Interceptors = [new Saves(), new Commands()];
+
+    // команда очистки падает на каждом проходе (/chaos/cleanup/fail)
+    public static bool CleanupFails { get; set; }
 
     // SaveChanges, который ставит заказу Paid, ждёт столько секунд перед записью:
     // окно между загрузкой и сохранением у привычной оплаты (/chaos/pay/slow)
@@ -26,6 +29,7 @@ public static class DbChaos
     {
         PaySlowSeconds = 0;
         CleanupSlowSeconds = 0;
+        CleanupFails = false;
     }
 
     private static void CrashIfAsked()
@@ -46,6 +50,23 @@ public static class DbChaos
                 _ => 0
             })
             .DefaultIfEmpty(0).Max() ?? 0;
+
+    // Команда очистки — UPDATE "Orders" с условием на время создания;
+    // у оплаты такого условия нет, её сбой не трогает.
+    private class Commands : DbCommandInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
+            System.Data.Common.DbCommand command, CommandEventData e,
+            InterceptionResult<int> result, CancellationToken ct = default)
+        {
+            if (CleanupFails
+                && command.CommandText.Contains("UPDATE \"Orders\"")
+                && command.CommandText.Contains("\"CreatedAt\" <"))
+                throw new InvalidOperationException(
+                    "Очистка сломана (сбой: /chaos/cleanup/fail)");
+            return ValueTask.FromResult(result);
+        }
+    }
 
     private class Saves : SaveChangesInterceptor
     {

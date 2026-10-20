@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Shop.Background;
 using Shop.Data;
 
 namespace Shop.Mistakes.LoadModifySave;
@@ -10,6 +11,7 @@ namespace Shop.Mistakes.LoadModifySave;
 // Окно растягивает POST /chaos/cleanup/slow (README, 11-race).
 public class OrderCleanupWorker(
     IServiceScopeFactory scopes,
+    CleanupStatus status,
     ILogger<OrderCleanupWorker> log) : BackgroundService
 {
     protected override async Task ExecuteAsync(
@@ -23,6 +25,7 @@ public class OrderCleanupWorker(
             try
             {
                 await CancelUnpaidAsync(stoppingToken);
+                status.Passed(); // для хелсчека
             }
             catch (Exception ex)
                 when (!stoppingToken.IsCancellationRequested)

@@ -30,6 +30,11 @@ builder.Services.AddHostedService<ExportWorker>();
 builder.Services.AddSingleton<ProductViews>();
 builder.Services.AddHostedService<ViewsWriter>();
 
+builder.Services.AddSingleton<CleanupStatus>();
+builder.Services.AddHealthChecks()
+    .AddCheck<OutboxHealthCheck>("email-outbox")
+    .AddCheck<CleanupHealthCheck>("order-cleanup");
+
 // грейс-период: Kubernetes — 30 с, в compose
 // проекта stop_grace_period тоже 30 с; хосту — 20
 builder.Services.Configure<HostOptions>(o =>
@@ -47,4 +52,6 @@ var app = builder.Build();
 Schema.Create(app.Services);
 
 app.MapControllers();
+// хелсчеки фоновой работы: Healthy или Degraded с причиной
+app.MapHealthChecks("/health");
 app.Run();
