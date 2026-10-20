@@ -6,9 +6,11 @@ namespace Shop.Background;
 
 // Рассылка: раз в пять секунд берёт неотправленные письма из таблицы исходящих,
 // шлёт и ставит отметку. Хост запускает её на старте и останавливает вместе с магазином.
+// Ошибка почты остаётся в письме, ошибка прохода — в проходе: магазин живёт.
 public class EmailOutboxWorker(
     IServiceScopeFactory scopes,
-    IOrderMail mail) : BackgroundService
+    IOrderMail mail,
+    ILogger<EmailOutboxWorker> log) : BackgroundService
 {
     private const int BatchSize = 20;
 
@@ -20,7 +22,16 @@ public class EmailOutboxWorker(
         while (await timer
                    .WaitForNextTickAsync(stoppingToken))
         {
-            await SendBatchAsync(stoppingToken);
+            // отмену при остановке catch пропускает
+            try
+            {
+                await SendBatchAsync(stoppingToken);
+            }
+            catch (Exception ex)
+                when (!stoppingToken.IsCancellationRequested)
+            {
+                log.LogError(ex, "Проход рассылки упал");
+            }
         }
     }
 
@@ -39,8 +50,17 @@ public class EmailOutboxWorker(
             .ToListAsync(ct);
         foreach (var p in batch)
         {
-            await mail.SendAsync(p.To, p.Order);
-            p.SentAt = DateTime.UtcNow;
+            try
+            {
+                await mail.SendAsync(p.To, p.Order);
+                p.SentAt = DateTime.UtcNow;
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex,
+                    "Письмо к заказу {OrderId} не ушло",
+                    p.OrderId);
+            }
             await db.SaveChangesAsync(ct);
         }
     }
