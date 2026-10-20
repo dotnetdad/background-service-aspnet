@@ -23,3 +23,18 @@ POST {{shop}}/chaos/mail/up
 
 ### Процесс упадёт сразу после следующего сохранения в базу
 POST {{shop}}/chaos/crash-after-save
+
+### Заказ с опечаткой в адресе (домен .invalid): почта отвечает ошибкой на каждую попытку
+POST {{shop}}/orders
+Content-Type: application/json
+
+< ./tools/order-typo.json
+
+### Почта лежит
+POST {{shop}}/chaos/mail/down
+
+### Почта принимает соединение и молчит
+POST {{shop}}/chaos/mail/silent
+
+### Вернуть письма после пяти ошибок в очередь
+POST {{shop}}/outbox/given-up/retry

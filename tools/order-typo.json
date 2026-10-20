@@ -1,0 +1,5 @@
+{
+  "userId": "22222222-2222-2222-2222-222222222222",
+  "email": "buyer@example.invalid",
+  "items": [{ "product": "Mug", "quantity": 1, "price": 450 }]
+}

@@ -24,7 +24,10 @@ public class SmtpOrderMail(IOptions<MailSettings> settings) : IOrderMail
     {
         using var smtp = new SmtpClient(
             settings.Value.Host, settings.Value.Port);
-        await smtp.SendMailAsync(message);
+        // почта молчит дольше десяти секунд — ошибка
+        using var timeout = new CancellationTokenSource(
+            TimeSpan.FromSeconds(10));
+        await smtp.SendMailAsync(message, timeout.Token);
     }
 
     private static string Body(Order order) =>
