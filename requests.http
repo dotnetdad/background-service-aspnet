@@ -98,3 +98,6 @@ GET {{shop}}/health
 
 ### Проход очистки падает на каждом тике (снять — /chaos/db/ok)
 POST {{shop}}/chaos/cleanup/fail
+
+### Процесс жив — без проверок, для перезапуска
+GET {{shop}}/health/live

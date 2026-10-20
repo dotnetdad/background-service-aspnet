@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Shop.Background;
 using Shop.Data;
 using Shop.Mail;
@@ -52,6 +54,17 @@ var app = builder.Build();
 Schema.Create(app.Services);
 
 app.MapControllers();
-// хелсчеки фоновой работы: Healthy или Degraded с причиной
-app.MapHealthChecks("/health");
+// для алерта: Degraded — код 503, а не 200
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResultStatusCodes =
+    {
+        [HealthStatus.Degraded] = 503
+    }
+});
+// для перезапуска: процесс жив и отвечает
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
 app.Run();
