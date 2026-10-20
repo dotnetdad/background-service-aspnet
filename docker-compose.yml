@@ -13,6 +13,9 @@ services:
 
   mail:
     image: rnwood/smtp4dev:v3
+    environment:
+      # почта хранит последние 5000 писем (по умолчанию — 100)
+      ServerOptions__NumberOfMessagesToKeep: "5000"
     ports:
       - "8025:80"    # веб-интерфейс почты: http://localhost:8025
       - "2525:25"
@@ -30,5 +33,8 @@ services:
       Mail__Port: "25"
       # анти-примеры — в docker-compose.override.yml (README, «Анти-примеры»)
     ports: ["8080:8080"]
+    # грейс-период: после сигнала остановки — 30 секунд, как у Kubernetes,
+    # потом SIGKILL (по умолчанию у docker compose — 10). Хосту — 20 (Program.cs)
+    stop_grace_period: 30s
     # упавший процесс поднимается заново, как под оркестратором
     restart: on-failure

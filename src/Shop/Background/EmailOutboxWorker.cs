@@ -7,6 +7,7 @@ namespace Shop.Background;
 // Рассылка: раз в пять секунд берёт письма, чьё время пришло, шлёт и ставит отметку.
 // Ошибка почты добавляет попытку и отодвигает следующую: 1, 4, 9, 16 минут.
 // После пятой ошибки письмо выходит из выборки и ждёт разбора (OutboxController).
+// На остановке начатое письмо уходит до конца и получает отметку, новое не начинается.
 public class EmailOutboxWorker(
     IServiceScopeFactory scopes,
     IOrderMail mail,
@@ -53,6 +54,9 @@ public class EmailOutboxWorker(
             .ToListAsync(ct);
         foreach (var p in batch)
         {
+            // остановка — новое письмо не начинаем
+            if (ct.IsCancellationRequested)
+                break;
             try
             {
                 await mail.SendAsync(p.To, p.Order);
@@ -62,7 +66,8 @@ public class EmailOutboxWorker(
             {
                 ScheduleRetry(p, ex);
             }
-            await db.SaveChangesAsync(ct);
+            // отметку сохраняем и при остановке
+            await db.SaveChangesAsync(CancellationToken.None);
         }
     }
 
