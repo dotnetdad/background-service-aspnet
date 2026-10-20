@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Shop.Background;
 using Shop.Data;
 using Shop.Mail;
 using Shop.Mistakes;
@@ -14,6 +15,7 @@ builder.Services.AddDbContext<AppDb>(o =>
     o.UseNpgsql(builder.Configuration
         .GetConnectionString("Db")));
 builder.Services.AddSingleton<IOrderMail, SmtpOrderMail>();
+builder.Services.AddHostedService<EmailOutboxWorker>();
 
 // анти-примеры: Mistakes__Имя=true (README, «Анти-примеры»)
 builder.Services.AddMistakes(builder.Configuration);
