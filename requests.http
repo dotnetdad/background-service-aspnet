@@ -41,3 +41,6 @@ POST {{shop}}/outbox/given-up/retry
 
 ### Второй инстанс (docker compose --profile copies up): почта медленная и у него
 POST http://localhost:8082/chaos/mail/slow?seconds=1
+
+### Процесс упадёт сразу после следующей отправки письма
+POST {{shop}}/chaos/crash-after-send

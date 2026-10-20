@@ -45,6 +45,13 @@ public class ChaosController(IOptions<MailSettings> mail) : ControllerBase
         return Ok("Почта работает");
     }
 
+    [HttpPost("crash-after-send")]
+    public IActionResult CrashAfterSend()
+    {
+        MailChaos.CrashAfterNextSend();
+        return Ok("Процесс упадёт сразу после следующей отправки письма");
+    }
+
     [HttpPost("crash-after-save")]
     public IActionResult CrashAfterSave()
     {

@@ -18,6 +18,8 @@ public class SmtpOrderMail(IOptions<MailSettings> settings) : IOrderMail
             $"Заказ {order.Id} принят",
             Body(order));
         await SendMessageAsync(message);
+        // сбой из README: /chaos/crash-after-send
+        MailChaos.AfterSend();
     }
 
     private async Task SendMessageAsync(MailMessage message)

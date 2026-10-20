@@ -8,6 +8,7 @@ namespace Shop.Chaos;
 public static class MailChaos
 {
     private static int _failNext;
+    private static int _crashAfterSend;
     private static (string Host, int Port)? _realMail;
 
     // почта лежит: каждое письмо — SmtpException
@@ -17,6 +18,9 @@ public static class MailChaos
     public static int SlowSeconds { get; private set; }
 
     public static void FailNext() => Interlocked.Increment(ref _failNext);
+
+    public static void CrashAfterNextSend() =>
+        Interlocked.Exchange(ref _crashAfterSend, 1);
 
     // Почта принимает соединение и молчит: настройки почты магазина
     // показывают на сервер этого процесса, который ничего не отвечает (SilentMail).
@@ -64,6 +68,15 @@ public static class MailChaos
                 SmtpStatusCode.MailboxUnavailable, to,
                 "Ящика не существует (адрес на .invalid)");
         return Task.CompletedTask;
+    }
+
+    // Зовёт почта магазина сразу после отправки: письмо ушло,
+    // а отметку рассылка сохранить не успеет.
+    public static void AfterSend()
+    {
+        if (Interlocked.Exchange(ref _crashAfterSend, 0) == 1)
+            Environment.FailFast(
+                "Процесс упал сразу после отправки письма (сбой: /chaos/crash-after-send)");
     }
 
     private static bool Take(ref int counter)
