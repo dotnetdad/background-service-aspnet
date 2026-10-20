@@ -1,0 +1,6 @@
+bin/
+obj/
+.vs/
+*.user
+# Анти-примеры включаются этим файлом (README, «Анти-примеры»)
+docker-compose.override.yml

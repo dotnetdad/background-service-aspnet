@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: shop
+      POSTGRES_DB: shop
+    ports: ["55432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shop"]
+      interval: 2s
+      retries: 20
+
+  mail:
+    image: rnwood/smtp4dev:v3
+    ports:
+      - "8025:80"    # веб-интерфейс почты: http://localhost:8025
+      - "2525:25"
+
+  shop:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+      mail: { condition: service_started }
+    environment:
+      # дев-режим: контейнер зависимостей проверяет время жизни сервисов на старте
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Db: "Host=db;Database=shop;Username=shop;Password=shop;GSS Encryption Mode=Disable"
+      Mail__Host: mail
+      Mail__Port: "25"
+      # анти-примеры — в docker-compose.override.yml (README, «Анти-примеры»)
+    ports: ["8080:8080"]
+    # упавший процесс поднимается заново, как под оркестратором
+    restart: on-failure

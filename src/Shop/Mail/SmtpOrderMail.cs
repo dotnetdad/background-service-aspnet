@@ -1,0 +1,33 @@
+using System.Net.Mail;
+using Microsoft.Extensions.Options;
+using Shop.Chaos;
+using Shop.Data;
+
+namespace Shop.Mail;
+
+// Почта магазина: письмо о заказе с его составом.
+// Почтовый клиент — свой на каждое письмо: SmtpClient шлёт одно письмо за раз.
+public class SmtpOrderMail(IOptions<MailSettings> settings) : IOrderMail
+{
+    public async Task SendAsync(string to, Order order)
+    {
+        // сбои из README: /chaos/mail/...
+        await MailChaos.BeforeSendAsync(to);
+        using var message = new MailMessage(
+            "shop@example.com", to,
+            $"Заказ {order.Id} принят",
+            Body(order));
+        await SendMessageAsync(message);
+    }
+
+    private async Task SendMessageAsync(MailMessage message)
+    {
+        using var smtp = new SmtpClient(
+            settings.Value.Host, settings.Value.Port);
+        await smtp.SendMailAsync(message);
+    }
+
+    private static string Body(Order order) =>
+        "Состав заказа:\n" + string.Join("\n", order.Items.Select(i =>
+            $"{i.Product} × {i.Quantity} — {i.Price * i.Quantity} ₽"));
+}

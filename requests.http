@@ -1,0 +1,22 @@
+@shop = http://localhost:8080
+
+### Оформить заказ
+POST {{shop}}/orders
+Content-Type: application/json
+
+< ./tools/order.json
+
+### Посмотреть заказ (подставь номер из ответа)
+GET {{shop}}/orders/00000000-0000-0000-0000-000000000000
+
+### Оплатить заказ (подставь номер)
+POST {{shop}}/orders/00000000-0000-0000-0000-000000000000/pay
+
+### Почта ответит ошибкой на следующее письмо
+POST {{shop}}/chaos/mail/fail-next
+
+### Почта отвечает медленно: 9 секунд на письмо
+POST {{shop}}/chaos/mail/slow?seconds=9
+
+### Почта снова работает, все сбои почты сняты
+POST {{shop}}/chaos/mail/up
