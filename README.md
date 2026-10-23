@@ -504,3 +504,29 @@ services:
 - Кто опрашивает `/health` и шлёт алерт. Внешний мониторинг (Prometheus с blackbox exporter, Uptime Kuma, облачный мониторинг). Или `IHealthCheckPublisher` в самом приложении: он раз в период прогоняет проверки и отдаёт отчёт, куда скажешь. Или те же значения метриками через OpenTelemetry.
 - Readiness и проба запуска живут отдельно от `/health`. Readiness отвечает на вопрос «можно ли слать этому инстансу запросы», и туда идёт только то, без чего инстанс не обслужит запрос (своя база, прогрев). Проверки фоновой работы читают общую таблицу, у всех инстансов результат один, и на 503 из ротации вышли бы все разом. Startup-проба даёт медленному старту время, пока liveness не начала проверять.
 - Служебные адреса (`/health`, `/outbox/given-up/retry`, `/chaos/...`) наружу не открывают. Их выносят на отдельный порт (`app.MapHealthChecks(...).RequireHost("*:8081")` и второй адрес в `ASPNETCORE_URLS`) или закрывают авторизацией. `/chaos` в этом проекте нужен только для стенда.
+
+## Источники
+
+Страницы документации, на которые опирается видео: числа по умолчанию, поведение платформы, решения команды .NET. В порядке видео.
+
+- [Таблица исходящих писем — шаблон Transactional Outbox](https://masstransit.io/documentation/patterns/transactional-outbox)
+- [SaveChanges пишет все изменения одной транзакцией](https://learn.microsoft.com/en-us/ef/core/saving/transactions#default-transaction-behavior)
+- [PeriodicTimer: пропущенные тики сливаются в один](https://learn.microsoft.com/en-us/dotnet/api/system.threading.periodictimer.waitfornexttickasync)
+- [Scoped-сервис в singleton — захваченная зависимость](https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection-guidelines#captive-dependency)
+- [Проверка scoped-сервисов при старте — только в дев-режиме](https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#scope-validation)
+- [С .NET 6 хост по умолчанию останавливается на необработанном исключении фонового сервиса](https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/6.0/hosting-exception-handling)
+- [.NET 11: после StopHost приложение выходит с ненулевым кодом](https://learn.microsoft.com/en-us/dotnet/core/compatibility/extensions/11/ihost-runasync-stopasync-throw-backgroundservice-failure)
+- [Docker Compose: restart on-failure и always, stop_grace_period по умолчанию 10 секунд, healthcheck](https://docs.docker.com/reference/compose-file/services/)
+- [SmtpClient.Timeout — по умолчанию 100 секунд, для синхронного Send](https://learn.microsoft.com/en-us/dotnet/api/system.net.mail.smtpclient.timeout)
+- [Таймаут остановки хоста — по умолчанию 30 секунд](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/host/generic-host)
+- [Kubernetes: остановка пода и грейс-период 30 секунд](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/)
+- [PostgreSQL, FOR UPDATE SKIP LOCKED](https://www.postgresql.org/docs/17/sql-select.html#SQL-FOR-UPDATE-SHARE)
+- [Ключ идемпотентности у почтового провайдера (Resend)](https://resend.com/docs/dashboard/emails/idempotency-keys)
+- [Один DbContext не выполняет операции параллельно](https://learn.microsoft.com/en-us/ef/core/dbcontext-configuration/#avoiding-dbcontext-threading-issues)
+- [Пример по таймеру в документации ASP.NET Core — System.Threading.Timer](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/host/hosted-services#timed-background-tasks)
+- [PostgreSQL, Read Committed: условие команды перепроверяется на новой версии строки](https://www.postgresql.org/docs/17/transaction-iso.html#XACT-READ-COMMITTED)
+- [nginx: proxy_read_timeout по умолчанию 60 секунд](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_read_timeout)
+- [Npgsql: таймаут подключения (Timeout) по умолчанию 15 секунд](https://www.npgsql.org/doc/connection-string-parameters.html)
+- [Хелсчеки ASP.NET Core: Degraded по умолчанию с кодом 200, фильтр проверок](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/health-checks#customize-the-http-status-code)
+- [Kubernetes: liveness-проба перезапускает контейнер, readiness — держит инстанс в ротации](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
+- [Kubernetes: проба по умолчанию проваливается после трёх ошибок подряд](https://kubernetes.io/docs/concepts/configuration/liveness-readiness-startup-probes/)
